@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>屏幕尺寸模拟器</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        button {
+            flex: 1;
+            padding: 12px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        button:hover {
+            background-color: #45a049;
+        }
+        
+        #rotateBtn {
+            background-color: #2196F3;
+        }
+        
+        #rotateBtn:hover {
+            background-color: #0b7dda;
+        }
+        
+        #simulationArea {
+            margin-top: 30px;
+            text-align: center;
+        }
+        
+        #box {
+            display: inline-block;
+            border: 3px solid #ff0000;
+            box-sizing: border-box;
+            background-color: rgba(255, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .shape-container {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .shape {
+            position: absolute;
+            top: 0;
+            left: 0;
+            border: 3px solid #ff0000;
+            box-sizing: border-box;
+            background-color: rgba(255, 0, 0, 0.1);
+        }
+        
+        .info {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e7f3ff;
+            border-left: 6px solid #2196F3;
+        }
+        
+        .error {
+            color: red;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .screen-info {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+        }
+        
+        .shape-selector {
+            margin: 15px 0;
+        }
+        
+        .shape-selector label {
+            display: inline-block;
+            margin-right: 15px;
+        }
+        
+        .shape-selector input {
+            width: auto;
+            margin-right: 5px;
+        }
+        
+        .param-info {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>屏幕尺寸模拟器</h1>
+        
+        <div class="shape-selector">
+            <label><input type="radio" name="shape" value="rectangle" checked onchange="updateInputFields()"> 矩形</label>
+            <label><input type="radio" name="shape" value="circle" onchange="updateInputFields()"> 圆形</label>
+            <label><input type="radio" name="shape" value="ellipse" onchange="updateInputFields()"> 椭圆</label>
+            <label><input type="radio" name="shape" value="line" onchange="updateInputFields()"> 直线</label>
+            <label><input type="radio" name="shape" value="triangle" onchange="updateInputFields()"> 三角形</label>
+            <label><input type="radio" name="shape" value="trapezoid" onchange="updateInputFields()"> 梯形</label>
+        </div>
+        
+        <div class="input-group">
+            <label for="param1" id="param1Label">宽度 (cm):</label>
+            <input type="number" id="param1" placeholder="请输入参数1(厘米)" min="1" step="0.1">
+        </div>
+        
+        <div class="input-group" id="param2Group">
+            <label for="param2" id="param2Label">高度 (cm):</label>
+            <input type="number" id="param2" placeholder="请输入参数2(厘米)" min="1" step="0.1">
+            <div class="param-info" id="param2Info"></div>
+        </div>
+        
+        <div class="input-group" id="param3Group" style="display: none;">
+            <label for="param3" id="param3Label">参数3:</label>
+            <input type="number" id="param3" placeholder="请输入参数3" min="0" step="0.1">
+            <div class="param-info" id="param3Info"></div>
+        </div>
+        
+        <div class="button-group">
+            <button onclick="simulateSize()">模拟尺寸</button>
+            <button id="rotateBtn" onclick="rotateShape()">旋转90度</button>
+        </div>
+        
+        <div id="errorMessage" class="error"></div>
+        
+        <div id="simulationArea"></div>
+        
+        <div class="screen-info">
+            <h3>屏幕信息:</h3>
+            <p>分辨率: <span id="resolution">未知</span></p>
+            <p>屏幕尺寸: <span id="screenSize">未知</span></p>
+            <p>每厘米像素数: <span id="ppc">未知</span></p>
+        </div>
+        
+        <div class="info">
+            <h3>使用说明:</h3>
+            <p>1. 选择要模拟的几何图形</p>
+            <p>2. 输入相应参数</p>
+            <p>3. 点击"模拟尺寸"按钮</p>
+            <p>4. 点击"旋转90度"按钮可以旋转图形</p>
+            <p>注意: 为了获得最准确的结果，请确保您的屏幕DPI设置正确</p>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        let currentParams = {param1: 0, param2: 0, param3: 0};
+        let currentShape = 'rectangle';
+        let isRotated = false;
+        
+        // 页面加载时获取屏幕信息并更新输入字段
+        window.onload = function() {
+            getScreenInfo();
+            updateInputFields();
+        };
+        
+        // 根据选择的形状更新输入字段
+        function updateInputFields() {
+            const shapeRadios = document.getElementsByName('shape');
+            for (let radio of shapeRadios) {
+                if (radio.checked) {
+                    currentShape = radio.value;
+                    break;
+                }
+            }
+            
+            const param1Label = document.getElementById('param1Label');
+            const param2Label = document.getElementById('param2Label');
+            const param2Group = document.getElementById('param2Group');
+            const param3Group = document.getElementById('param3Group');
+            const param3Label = document.getElementById('param3Label');
+            const param2Info = document.getElementById('param2Info');
+            const param3Info = document.getElementById('param3Info');
+            
+            // 重置参数信息
+            param2Info.textContent = '';
+            param3Info.textContent = '';
+            
+            switch(currentShape) {
+                case 'rectangle':
+                    param1Label.textContent = '宽度 (cm):';
+                    param2Label.textContent = '高度 (cm):';
+                    param2Group.style.display = 'block';
+                    param3Group.style.display = 'none';
+                    break;
+                case 'circle':
+                    param1Label.textContent = '直径 (cm):';
+                    param2Group.style.display = 'none';
+                    param3Group.style.display = 'none';
+                    break;
+                case 'ellipse':
+                    param1Label.textContent = '水平直径 (cm):';
+                    param2Label.textContent = '垂直直径 (cm):';
+                    param2Group.style.display = 'block';
+                    param3Group.style.display = 'none';
+                    break;
+                case 'line':
+                    param1Label.textContent = '长度 (cm):';
+                    param2Label.textContent = '线宽 (cm):';
+                    param2Group.style.display = 'block';
+                    param2Info.textContent = '线宽影响线条可见性，不影响长度';
+                    param3Group.style.display = 'none';
+                    break;
+                case 'triangle':
+                    param1Label.textContent = '底边长度 (cm):';
+                    param2Label.textContent = '高度 (cm):';
+                    param2Group.style.display = 'block';
+                    param3Group.style.display = 'none';
+                    break;
+                case 'trapezoid':
+                    param1Label.textContent = '下底长度 (cm):';
+                    param2Label.textContent = '高度 (cm):';
+                    param2Group.style.display = 'block';
+                    param3Group.style.display = 'block';
+                    param3Label.textContent = '上底长度 (cm):';
+                    param3Info.textContent = '如果为空，默认为下底的一半';
+                    break;
+            }
+        }
+        
+        // 获取屏幕信息
+        function getScreenInfo() {
+            // 获取屏幕分辨率
+            const screenWidth = screen.width;
+            const screenHeight = screen.height;
+            document.getElementById('resolution').textContent = screenWidth + " × " + screenHeight + " 像素";
+            
+            // 计算每厘米像素数 (标准DPI为96)
+            const ppc = 96 / 2.54; // 每厘米像素数
+            document.getElementById('ppc').textContent = ppc.toFixed(2) + " 像素/厘米";
+            
+            // 估算屏幕尺寸 (英寸)
+            const diagonalPixels = Math.sqrt(screenWidth * screenWidth + screenHeight * screenHeight);
+            const diagonalInches = diagonalPixels / 96; // 假设标准DPI为96
+            document.getElementById('screenSize').textContent = diagonalInches.toFixed(1) + " 英寸";
+        }
+        
+        // 模拟指定尺寸
+        function simulateSize() {
+            const param1 = parseFloat(document.getElementById('param1').value);
+            const param2 = parseFloat(document.getElementById('param2').value);
+            const param3 = parseFloat(document.getElementById('param3').value);
+            const errorMessage = document.getElementById('errorMessage');
+            const simulationArea = document.getElementById('simulationArea');
+            
+            // 清除之前的错误信息
+            errorMessage.textContent = '';
+            
+            // 验证输入
+            if (isNaN(param1) || param1 <= 0) {
+                errorMessage.textContent = '请输入有效的参数1（大于0）';
+                simulationArea.innerHTML = '';
+                return;
+            }
+            
+            // 根据不同形状检查参数
+            switch(currentShape) {
+                case 'rectangle':
+                case 'ellipse':
+                case 'line':
+                case 'triangle':
+                    if (isNaN(param2) || param2 <= 0) {
+                        errorMessage.textContent = '请输入有效的参数2（大于0）';
+                        simulationArea.innerHTML = '';
+                        return;
+                    }
+                    currentParams.param2 = param2;
+                    break;
+                case 'trapezoid':
+                    if (isNaN(param2) || param2 <= 0) {
+                        errorMessage.textContent = '请输入有效的参数2（大于0）';
+                        simulationArea.innerHTML = '';
+                        return;
+                    }
+                    currentParams.param2 = param2;
+                    // 参数3可以为空，默认为参数1的一半
+                    currentParams.param3 = isNaN(param3) ? param1 / 2 : param3;
+                    break;
+                case 'circle':
+                    // 圆形只需要一个参数
+                    currentParams.param2 = 0;
+                    currentParams.param3 = 0;
+                    break;
+            }
+            
+            currentParams.param1 = param1;
+            isRotated = false;
+            
+            // 计算每厘米像素数
+            const ppc = 96 / 2.54; // 标准DPI转换为每厘米像素数
+            
+            // 计算元素的像素尺寸
+            const param1Px = Math.round(param1 * ppc);
+            const param2Px = Math.round(currentParams.param2 * ppc);
+            const param3Px = Math.round(currentParams.param3 * ppc);
+            
+            // 获取视口尺寸
+            const viewportWidth = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
+            const viewportHeight = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
+            
+            // 检查模拟区域是否超出视口
+            if ((param1Px > viewportWidth || param2Px > viewportHeight) && currentShape !== 'circle') {
+                errorMessage.textContent = '警告: 模拟区域超出当前视口大小，可能无法完整显示';
+            }
+            
+            // 根据不同形状创建模拟区域
+            createShape(param1Px, param2Px, param3Px);
+        }
+        
+        // 创建不同形状
+        function createShape(param1Px, param2Px, param3Px) {
+            const simulationArea = document.getElementById('simulationArea');
+            
+            switch(currentShape) {
+                case 'rectangle':
+                    createRectangle(param1Px, param2Px);
+                    break;
+                case 'circle':
+                    createCircle(param1Px);
+                    break;
+                case 'ellipse':
+                    createEllipse(param1Px, param2Px);
+                    break;
+                case 'line':
+                    createLine(param1Px, param2Px);
+                    break;
+                case 'triangle':
+                    createTriangle(param1Px, param2Px);
+                    break;
+                case 'trapezoid':
+                    createTrapezoid(param1Px, param2Px, param3Px);
+                    break;
+                default:
+                    createRectangle(param1Px, param2Px);
+            }
+            
+            // 显示尺寸信息
+            let sizeInfo = '';
+            switch(currentShape) {
+                case 'rectangle':
+                    sizeInfo = `实际像素尺寸: ${param1Px} × ${param2Px} 像素`;
+                    break;
+                case 'circle':
+                    sizeInfo = `实际像素尺寸: ${param1Px} × ${param1Px} 像素 (直径)`;
+                    break;
+                case 'ellipse':
+                    sizeInfo = `实际像素尺寸: ${param1Px} × ${param2Px} 像素`;
+                    break;
+                case 'line':
+                    sizeInfo = `实际像素尺寸: ${param1Px} × ${param2Px} 像素`;
+                    break;
+                case 'triangle':
+                    sizeInfo = `底边: ${param1Px}px, 高度: ${param2Px}px`;
+                    break;
+                case 'trapezoid':
+                    sizeInfo = `下底: ${param1Px}px, 上底: ${param3Px}px, 高度: ${param2Px}px`;
+                    break;
+            }
+            
+            simulationArea.innerHTML += `<p>${sizeInfo}</p>`;
+        }
+        
+        // 创建矩形
+        function createRectangle(widthPx, heightPx) {
+            const simulationArea = document.getElementById('simulationArea');
+            simulationArea.innerHTML = `
+                <h3>模拟区域 - 矩形 (${currentParams.param1} cm × ${currentParams.param2} cm)</h3>
+                <div class="shape-container">
+                    <div id="box" style="width: ${widthPx}px; height: ${heightPx}px;"></div>
+                </div>
+            `;
+        }
+        
+        // 创建圆形
+        function createCircle(diameterPx) {
+            const simulationArea = document.getElementById('simulationArea');
+            simulationArea.innerHTML = `
+                <h3>模拟区域 - 圆形 (直径: ${currentParams.param1} cm)</h3>
+                <div class="shape-container">
+                    <div id="box" style="
+                        width: ${diameterPx}px; 
+                        height: ${diameterPx}px; 
+                        border-radius: 50%;
+                    "></div>
+                </div>
+            `;
+        }
+        
+        // 创建椭圆
+        function createEllipse(widthPx, heightPx) {
+            const simulationArea = document.getElementById('simulationArea');
+            simulationArea.innerHTML = `
+                <h3>模拟区域 - 椭圆 (${currentParams.param1} cm × ${currentParams.param2} cm)</h3>
+                <div class="shape-container">
+                    <div id="box" style="
+                        width: ${widthPx}px; 
+                        height: ${heightPx}px; 
+                        border-radius: 50%;
+                    "></div>
+                </div>
+            `;
+        }
+        
+        // 创建直线
+        function createLine(lengthPx, widthPx) {
+            const simulationArea = document.getElementById('simulationArea');
+            // 确保直线有一定宽度以便可见
+            const lineWidth = Math.max(20, widthPx);
+            
+            simulationArea.innerHTML = `
+                <h3>模拟区域 - 直线 (长度: ${currentParams.param1} cm, 线宽: ${currentParams.param2} cm)</h3>
+                <div class="shape-container">
+                    <div id="box" style="
+                        width: ${lengthPx}px; 
+                        height: ${lineWidth}px; 
+                        position: relative;
+                    ">
+                        <div style="
+                            position: absolute;
+                            top: 50%;
+                            left: 0;
+                            width: 100%;
+                            height: 3px;
+                            background-color: #ff0000;
+                            transform: translateY(-50%);
+                        "></div>
+                        <!-- 刻度线 -->
+                        <div class="scale-lines" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></div>
+                    </div>
+                </div>
+            `;
+            
+            // 添加刻度线
+            addScaleLines(lengthPx, lineWidth);
+        }
+        
+        // 添加刻度线到直线上
+        function addScaleLines(widthPx, heightPx) {
+            const scaleContainer = document.querySelector('.scale-lines');
+            if (!scaleContainer) return;
+            
+            // 每隔10%添加一个刻度线
+            for (let i = 0; i <= 10; i++) {
+                const scaleLine = document.createElement('div');
+                scaleLine.style.position = 'absolute';
+                scaleLine.style.top = '0';
+                scaleLine.style.left = (i * 10) + '%';
+                scaleLine.style.width = '1px';
+                scaleLine.style.height = (i % 5 === 0 ? '15px' : '10px'); // 主刻度线更长
+                scaleLine.style.backgroundColor = '#ff0000';
+                scaleLine.style.transform = 'translateX(-50%)';
+                scaleContainer.appendChild(scaleLine);
+            }
+        }
+        
+        // 创建三角形
+        function createTriangle(basePx, heightPx) {
+            const simulationArea = document.getElementById('simulationArea');
+            simulationArea.innerHTML = `
+                <h3>模拟区域 - 三角形 (底边: ${currentParams.param1} cm, 高度: ${currentParams.param2} cm)</h3>
+                <div class="shape-container">
+                    <div id="box" style="
+                        width: ${basePx}px; 
+                        height: ${heightPx}px;
+                        position: relative;
+                        background-color: transparent;
+                    ">
+                        <div style="
+                            position: absolute;
+                            top: 0;
+                            left: 50%;
+                            width: 0;
+                            height: 0;
+                            border-left: ${basePx/2}px solid transparent;
+                            border-right: ${basePx/2}px solid transparent;
+                            border-bottom: ${heightPx}px solid rgba(255, 0, 0, 0.1);
+                            box-sizing: border-box;
+                            transform: translateX(-50%);
+                        "></div>
+                        <div style="
+                            position: absolute;
+                            top: 0;
+                            left: 50%;
+                            width: 0;
+                            height: 0;
+                            border-left: ${basePx/2}px solid transparent;
+                            border-right: ${basePx/2}px solid transparent;
+                            border-bottom: ${heightPx}px solid transparent;
+                            border-bottom-color: #ff0000;
+                            box-sizing: border-box;
+                            transform: translateX(-50%);
+                        "></div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // 创建梯形
+        function createTrapezoid(bottomPx, heightPx, topPx) {
+            const simulationArea = document.getElementById('simulationArea');
+            simulationArea.innerHTML = `
+                <h3>模拟区域 - 梯形 (下底: ${currentParams.param1} cm, 上底: ${currentParams.param3} cm, 高度: ${currentParams.param2} cm)</h3>
+                <div class="shape-container">
+                    <div id="box" style="
+                        width: ${bottomPx}px; 
+                        height: ${heightPx}px;
+                        position: relative;
+                        background-color: transparent;
+                    ">
+                        <div style="
+                            position: absolute;
+                            top: 0;
+                            left: 50%;
+                            width: ${topPx}px;
+                            height: ${heightPx}px;
+                            background-color: rgba(255, 0, 0, 0.1);
+                            border: 3px solid #ff0000;
+                            box-sizing: border-box;
+                            transform: translateX(-50%) skew(20deg);
+                        "></div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // 旋转图形
+        function rotateShape() {
+            if (currentParams.param1 === 0) {
+                document.getElementById('errorMessage').textContent = '请先模拟尺寸再进行旋转操作';
+                return;
+            }
+            
+            isRotated = !isRotated;
+            
+            const box = document.getElementById('box');
+            if (box) {
+                // 计算每厘米像素数
+                const ppc = 96 / 2.54;
+                
+                // 交换参数
+                let tempParam = currentParams.param1;
+                currentParams.param1 = currentParams.param2;
+                currentParams.param2 = tempParam;
+                
+                // 计算新的像素尺寸
+                const newParam1Px = Math.round(currentParams.param1 * ppc);
+                const newParam2Px = Math.round(currentParams.param2 * ppc);
+                const newParam3Px = Math.round(currentParams.param3 * ppc);
+                
+                // 更新标题
+                const title = document.querySelector('h3');
+                if (title) {
+                    let titleText = '';
+                    switch(currentShape) {
+                        case 'rectangle':
+                            titleText = `模拟区域 - 矩形 (${currentParams.param1} cm × ${currentParams.param2} cm) ${isRotated ? '(已旋转)' : ''}`;
+                            break;
+                        case 'circle':
+                            titleText = `模拟区域 - 圆形 (直径: ${currentParams.param1} cm) ${isRotated ? '(已旋转)' : ''}`;
+                            break;
+                        case 'ellipse':
+                            titleText = `模拟区域 - 椭圆 (${currentParams.param1} cm × ${currentParams.param2} cm) ${isRotated ? '(已旋转)' : ''}`;
+                            break;
+                        case 'line':
+                            titleText = `模拟区域 - 直线 (长度: ${currentParams.param1} cm, 线宽: ${currentParams.param2} cm) ${isRotated ? '(已旋转)' : ''}`;
+                            break;
+                        case 'triangle':
+                            titleText = `模拟区域 - 三角形 (底边: ${currentParams.param1} cm, 高度: ${currentParams.param2} cm) ${isRotated ? '(已旋转)' : ''}`;
+                            break;
+                        case 'trapezoid':
+                            titleText = `模拟区域 - 梯形 (下底: ${currentParams.param1} cm, 上底: ${currentParams.param3} cm, 高度: ${currentParams.param2} cm) ${isRotated ? '(已旋转)' : ''}`;
+                            break;
+                    }
+                    title.textContent = titleText;
+                }
+                
+                // 根据形状应用旋转
+                switch(currentShape) {
+                    case 'rectangle':
+                        box.style.width = newParam1Px + 'px';
+                        box.style.height = newParam2Px + 'px';
+                        break;
+                    case 'circle':
+                        // 圆形旋转无变化
+                        break;
+                    case 'ellipse':
+                        box.style.width = newParam1Px + 'px';
+                        box.style.height = newParam2Px + 'px';
+                        break;
+                    case 'line':
+                        box.style.width = newParam1Px + 'px';
+                        box.style.height = Math.max(20, newParam2Px) + 'px';
+                        // 重新添加刻度线
+                        document.querySelector('.scale-lines').innerHTML = '';
+                        addScaleLines(newParam1Px, Math.max(20, newParam2Px));
+                        break;
+                    case 'triangle':
+                        box.style.width = newParam1Px + 'px';
+                        box.style.height = newParam2Px + 'px';
+                        box.firstChild.style.borderLeft = (newParam1Px/2) + 'px solid transparent';
+                        box.firstChild.style.borderRight = (newParam1Px/2) + 'px solid transparent';
+                        box.firstChild.style.borderBottom = newParam2Px + 'px solid rgba(255, 0, 0, 0.1)';
+                        box.lastChild.style.borderLeft = (newParam1Px/2) + 'px solid transparent';
+                        box.lastChild.style.borderRight = (newParam1Px/2) + 'px solid transparent';
+                        box.lastChild.style.borderBottom = newParam2Px + 'px solid #ff0000';
+                        break;
+                    case 'trapezoid':
+                        box.style.width = newParam1Px + 'px';
+                        box.style.height = newParam2Px + 'px';
+                        const trapezoid = box.firstChild;
+                        trapezoid.style.width = newParam3Px + 'px';
+                        trapezoid.style.height = newParam2Px + 'px';
+                        break;
+                }
+                
+                // 更新尺寸信息
+                const sizeInfo = document.querySelector('#simulationArea p');
+                if (sizeInfo) {
+                    let sizeText = '';
+                    switch(currentShape) {
+                        case 'rectangle':
+                            sizeText = `实际像素尺寸: ${newParam1Px} × ${newParam2Px} 像素`;
+                            break;
+                        case 'circle':
+                            sizeText = `实际像素尺寸: ${newParam1Px} × ${newParam1Px} 像素 (直径)`;
+                            break;
+                        case 'ellipse':
+                            sizeText = `实际像素尺寸: ${newParam1Px} × ${newParam2Px} 像素`;
+                            break;
+                        case 'line':
+                            sizeText = `实际像素尺寸: ${newParam1Px} × ${Math.max(20, newParam2Px)} 像素`;
+                            break;
+                        case 'triangle':
+                            sizeText = `底边: ${newParam1Px}px, 高度: ${newParam2Px}px`;
+                            break;
+                        case 'trapezoid':
+                            sizeText = `下底: ${newParam1Px}px, 上底: ${newParam3Px}px, 高度: ${newParam2Px}px`;
+                            break;
+                    }
+                    sizeInfo.textContent = sizeText;
+                }
+            }
+        }
+        
+        // 获取形状名称
+        function getShapeName(shape) {
+            const names = {
+                'rectangle': '矩形',
+                'circle': '圆形',
+                'ellipse': '椭圆',
+                'line': '直线',
+                'triangle': '三角形',
+                'trapezoid': '梯形'
+            };
+            return names[shape] || '未知形状';
+        }
+        
+        // 监听窗口大小变化
+        window.addEventListener('resize', function() {
+            // 如果已经有模拟区域，重新显示屏幕信息
+            if (document.getElementById('box')) {
+                getScreenInfo();
+            }
+        });
+    </script>
+</body>
+</html>
